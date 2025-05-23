@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dream Zine Kiosk</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f8f6fb, #e8e5f0);
+    }
+
+    .container {
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 2.5rem;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #4a4468;
+      margin-bottom: 1.2rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: #fdfdfd;
+      margin-bottom: 1.5rem;
+      transition: border 0.3s;
+    }
+
+    textarea:focus {
+      border: 1px solid #a89cc8;
+      outline: none;
+    }
+
+    button {
+      background: #6c63a8;
+      color: white;
+      padding: 0.8rem 1.8rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s ease;
+      margin: 0.3rem;
+    }
+
+    button:hover {
+      background: #59528c;
+      transform: translateY(-1px);
+    }
+
+    #loader {
+      font-size: 1rem;
+      color: #6c63a8;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    #zinePreview {
+      margin-top: 2rem;
+      background: #fcfbfe;
+      border-left: 4px solid #b6aad9;
+      padding: 1.2rem;
+      border-radius: 10px;
+      text-align: left;
+      white-space: pre-wrap;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💭 Tell Us Your Dream 💭</h1>
+    <textarea id="dreamInput" placeholder="Write your dream here..."></textarea><br>
+    <button onclick="submitDream()">🧠 Preview Zine Text</button>
+    <button onclick="downloadPDF()">📄 Download PDF</button>
+    <div id="loader">Generating your zine...</div>
+    <div id="zinePreview"></div>
+  </div>
+
+  <script>
+    async function submitDream() {
+      const dream = document.getElementById("dreamInput").value.trim();
+      const loader = document.getElementById("loader");
+      const preview = document.getElementById("zinePreview");
+
+      if (!dream) {
+        alert("Please enter a dream.");
+        return;
+      }
+
+      loader.style.display = "block";
+      preview.innerText = "";
+
+      try {
+        const response = await fetch("/api/create-dream-zine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dream })
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error("Server error: " + error);
+        }
+
+        const { zineText } = await response.json();
+        preview.innerText = zineText || "No content returned.";
+      } catch (err) {
+        console.error("Zine generation failed:", err);
+        alert("⚠️ Failed to generate your zine:\n" + err.message);
+      } finally {
+        loader.style.display = "none";
+      }
+    }
+
+    async function downloadPDF() {
+      const dream = document.getElementById("dreamInput").value.trim();
+      const loader = document.getElementById("loader");
+
+      if (!dream) {
+        alert("Please enter a dream first.");
+        return;
+      }
+
+      loader.style.display = "block";
+
+      try {
+        const response = await fetch("/api/generate-zine-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dream })
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error("PDF generation error: " + error);
+        }
+        
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        const now = new Date();
+        const filename = `dream-zine-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.pdf`;
+        link.download = filename;
+        document.body.appendChild(link  );
+        link.click();
+        link.remove();
+      } catch (err) {
+        alert("❌ PDF download failed:\n" + err.message);
+      } finally {
+        loader.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
