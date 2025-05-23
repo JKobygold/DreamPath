@@ -190,6 +190,6 @@ console.log(placements[0][1],placements[0][2]);
 });
 
 
-app.listen(port, () => {
-  console.log(`\u{1F680} Zine generator running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`\u{1F680} Zine generator running at http://0.0.0.0:${port}`);
 });
